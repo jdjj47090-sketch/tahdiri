@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101719">
+  <title>تحضيري | فيديو تعريفي</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme:dark; --bg:#101719; --surface:#182225; --surface-2:#202e31; --brand:#55d4c4; --brand-deep:#0f5f5c; --ink:#f5fbfa; --muted:#b1c2c1; --gold:#e0a526; --line:#ffffff20; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; display:grid; place-items:center; padding:18px; background:radial-gradient(ellipse at 50% 20%,#193435 0,var(--bg) 62%); color:var(--ink); font-family:Cairo,"Noto Sans Arabic",Tahoma,sans-serif; }
+    main { width:min(100%,460px); display:grid; justify-items:center; gap:16px; }
+    .stage { width:min(100%,360px); overflow:hidden; aspect-ratio:9/16; border-radius:24px; background:var(--bg); box-shadow:0 24px 75px #0009,0 0 0 1px var(--line); }
+    canvas { display:block; width:100%; height:100%; }
+    .controls { width:100%; display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; }
+    button { min-height:48px; padding:10px 24px; border:1px solid transparent; border-radius:14px; background:var(--brand); color:#082321; font:800 16px Cairo,"Noto Sans Arabic",Tahoma,sans-serif; cursor:pointer; transition:transform .18s,background .18s,box-shadow .18s; }
+    button:hover { transform:translateY(-2px); background:#73e3d5; }
+    button:focus-visible { outline:3px solid #fff; outline-offset:3px; box-shadow:0 0 0 6px #55d4c466; }
+    button:disabled { cursor:wait; opacity:.7; }
+    .hint { margin:0; color:var(--muted); font-size:13px; text-align:center; }
+    .sr-only { position:absolute; width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0; }
+    @media (max-width:480px) { body { padding:12px; gap:12px; } .stage { width:min(100%,390px); border-radius:18px; } }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition-duration:.01ms!important; animation-duration:.01ms!important; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="stage"><canvas id="promo" width="1080" height="1920" role="img" aria-label="فيديو تعريفي بتحضيري باللهجة العراقية"></canvas></div>
+    <p class="sr-only" id="transcript">تريد تذاكر بذكاء؟ تحضيري. كل المادة بمكان واحد: رياضيات، فيزياء، كيمياء، أحياء، اجتماعيات، عربي. ذاكر وخلّي المعلومة تثبت. راجع وقت ما تحتاج. وزاريات وتحضير. الاشتراك شهري بعشرين ألف دينار، كل المميزات بسعر واحد، والحساب تنشئه وتفعّله الإدارة بعد ما تتواصل ويانا. جرّبه هسه على tahdiri-brown.vercel.app.</p>
+    <div class="controls"><button id="record" type="button">تسجيل الفيديو</button></div>
+    <p class="hint" id="status" aria-live="polite">الفيديو يعيد نفسه تلقائياً — اضغط للتسجيل</p>
+  </main>
+<script>
+(() => {
+  'use strict';
+  const canvas = document.getElementById('promo');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  const button = document.getElementById('record');
+  const status = document.getElementById('status');
+  const W = 1080, H = 1920, DURATION = 40000;
+  const C = { bg:'#101719', surface:'#182225', surface2:'#202e31', brand:'#55d4c4', deep:'#0f5f5c', ink:'#f5fbfa', muted:'#b1c2c1', gold:'#e0a526', line:'#ffffff25' };
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const scenes = [
+    { start:0, end:3000, title:['تريد تذاكر','بذكاء؟'], kind:'hook' },
+    { start:3000, end:8000, title:['كل المادة','بمكان واحد'], kind:'subjects' },
+    { start:8000, end:15000, title:['ذاكر وخلّي','المعلومة تثبت'], kind:'study' },
+    { start:15000, end:22000, title:['راجع وقت','ما تحتاج'], kind:'review' },
+    { start:22000, end:28000, title:['وزاريات','وتحضير'], kind:'prep' },
+    { start:28000, end:34000, title:['الاشتراك شهري','بـ 20 ألف دينار'], kind:'price' },
+    { start:34000, end:40000, title:['جرّبه هسه'], kind:'cta' }
+  ];
+  const subjects = [
+    ['رياضيات','∑','#55d4c4'], ['فيزياء','⚛','#67b7ff'], ['كيمياء','⚗','#df9cff'],
+    ['أحياء','✿','#8fe0a0'], ['اجتماعيات','⌖','#ffc66d'], ['عربي','ع','#ff8c85']
+  ];
+  let elapsed = 0, lastFrame = performance.now(), recording = false, recorder = null, chunks = [];
+  const logo = new Image(); logo.src = '../icons/icon.svg';
+  const font = (size, weight=800) => `${weight} ${size}px Cairo, "Noto Sans Arabic", Tahoma, sans-serif`;
+  function rr(x,y,w,h,r,fill,stroke=null,lw=2) {
+    ctx.beginPath(); ctx.roundRect(x,y,w,h,r); ctx.fillStyle=fill; ctx.fill();
+    if (stroke) { ctx.lineWidth=lw; ctx.strokeStyle=stroke; ctx.stroke(); }
+  }
+  function text(value,x,y,size,color=C.ink,align='center',weight=800,maxWidth=920) {
+    ctx.save(); ctx.direction='rtl'; ctx.textAlign=align; ctx.textBaseline='middle'; ctx.fillStyle=color;
+    let px=size; ctx.font=font(px,weight);
+    while (ctx.measureText(value).width>maxWidth && px>32) { px-=2; ctx.font=font(px,weight); }
+    ctx.shadowColor='#0007'; ctx.shadowBlur=14; ctx.shadowOffsetY=4; ctx.fillText(value,x,y,maxWidth); ctx.restore();
+  }
+  function multiline(lines,y,size,gap=size*1.28,color=C.ink) {
+    const first=y-(lines.length-1)*gap/2;
+    lines.forEach((line,i)=>text(line,W/2,first+i*gap,size,color,'center',900,930));
+  }
+  function logoAt(x,y,size) {
+    if (logo.complete && logo.naturalWidth) ctx.drawImage(logo,x-size/2,y-size/2,size,size);
+    else { rr(x-size/2,y-size/2,size,size,24,C.deep); text('ت',x,y,size*.55,C.ink); }
+  }
+  function background(t) {
+    const g=ctx.createLinearGradient(0,0,W,H); g.addColorStop(0,'#142325');g.addColorStop(.55,C.bg);g.addColorStop(1,'#102122');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    ctx.save(); ctx.globalAlpha=.15; ctx.strokeStyle=C.brand; ctx.lineWidth=2;
+    for(let i=0;i<8;i++){const y=((i*310-(t*.018)%310)+H)%H;ctx.beginPath();ctx.moveTo(0,y);ctx.bezierCurveTo(300,y-60,750,y+60,W,y);ctx.stroke();} ctx.restore();
+    ctx.save();ctx.globalAlpha=.5;ctx.fillStyle=C.brand;ctx.beginPath();ctx.arc(900,300,190,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.13;ctx.fillStyle=C.bg;ctx.beginPath();ctx.arc(900,300,190,0,Math.PI*2);ctx.fill();ctx.restore();
+  }
+  function progressLine(x,y,w,p) { rr(x,y,w,16,8,'#ffffff18');rr(x,y,Math.max(18,w*p),16,8,C.brand); }
+  function card(x,y,w,h,title,sub,icon,color=C.brand) {
+    rr(x,y,w,h,28,C.surface,C.line,2);rr(x+w-112,y+34,74,74,22,color+'2b');text(icon,x+w-75,y+72,40,color);
+    text(title,x+w-36,y+150,34,C.ink,'right',800,w-70);if(sub)text(sub,x+w-36,y+202,23,C.muted,'right',600,w-70);
+  }
+  function sceneFrame(scene,p,t) {
+    background(t);
+    const titleY=385;
+    multiline(scene.title,titleY,76,102);
+    ctx.fillStyle=C.brand;ctx.fillRect(W/2-54,510,108,8);
+    if(scene.kind==='hook') {
+      const s=260;logoAt(W/2,985,s);text('تحضيري',W/2,1190,75,C.ink);
+      text('خلّ دراستك أسهل',W/2,1305,35,C.muted,'center',600);
+    } else if(scene.kind==='subjects') {
+      subjects.forEach(([name,icon,color],i)=>{
+        const row=Math.floor(i/2),col=i%2,x=126+col*428,y=760+row*248;
+        const k=Math.max(0,Math.min(1,(p*7-i)*1.7)); ctx.save();ctx.globalAlpha=k;rr(x,y,390,190,28,C.surface,C.line,2);rr(x+30,y+45,95,95,25,color+'25');text(icon,x+77,y+92,43,color);text(name,x+345,y+94,34,C.ink,'right',800,220);ctx.restore();
+      });
+    } else if(scene.kind==='study') {
+      rr(90,720,900,680,38,C.surface,C.line,2);text('الدرس الأول',900,790,30,C.brand,'right',700);text('المعادلات الرياضية',900,860,40,C.ink,'right',800,760);
+      rr(148,930,784,280,22,C.surface2);text('س + ٥ = ١٢',540,1055,56,C.ink);text('س = ٧',540,1140,43,C.brand);
+      text('تقدّم الدرس',900,1268,25,C.muted,'right',600);progressLine(150,1320,780,.67);
+      rr(150,1370,300,78,20,C.surface2,C.line);text('السابق',300,1408,27,C.ink);
+      rr(630,1370,300,78,20,C.deep);text('التالي',780,1408,27,C.ink);
+      const q=Math.max(0,Math.min(1,(p-.52)*4));if(q>0){ctx.save();ctx.globalAlpha=q;rr(190,1490,700,205,28,'#16312f',C.brand,2);text('اختبار سريع',840,1540,28,C.brand,'right');text('شكد يساوي ١٢ - ٥؟',840,1615,36,C.ink,'right',800,600);ctx.restore();}
+    } else if(scene.kind==='review') {
+      card(150,730,780,220,'مراجعة اليوم','٣ بطاقات تنتظرك','↻');
+      rr(150,1000,780,490,30,C.surface,C.line,2);text('تقدّمك بالدراسة',870,1065,34,C.ink,'right');
+      const vals=[.3,.48,.4,.66,.55,.82,.72],base=1390,bw=62,gap=42;
+      ctx.strokeStyle=C.line;ctx.lineWidth=2;for(let k=0;k<4;k++){ctx.beginPath();ctx.moveTo(230,1170+k*65);ctx.lineTo(850,1170+k*65);ctx.stroke();}
+      vals.forEach((v,i)=>{const bh=220*v,x=260+i*(bw+gap);rr(x,base-bh,bw,bh,15,i===6?C.brand:C.deep);text(['س','ح','ن','ث','ر','خ','ج'][i],x+bw/2,1430,21,C.muted,'center',600,55);});
+    } else if(scene.kind==='prep') {
+      card(130,735,820,245,'الوزاريات','أسئلة وزارية حسب المادة','؟',C.gold);
+      card(130,1030,820,245,'التحضير','رتّب مهام دراستك','✓',C.brand);
+      rr(180,1350,720,100,24,C.surface2);text('اختار المادة وبلّش',540,1400,30,C.ink);
+    } else if(scene.kind==='price') {
+      rr(105,735,870,585,40,C.surface,C.line,2);rr(420,790,240,12,6,C.brand);
+      text('خطة وحدة',540,900,34,C.brand);text('20 ألف دينار',540,1050,67,C.ink,'center',900,800);text('بالشهر',540,1130,36,C.muted,'center',700);
+      text('كل المميزات بسعر واحد',540,1235,34,C.ink,'center',800,840);
+      text('الإدارة تنشئ الحساب وتفعّله',540,1435,27,C.muted,'center',700,900);text('بعد ما تتواصل ويانا',540,1490,27,C.muted,'center',700,900);
+    } else if(scene.kind==='cta') {
+      logoAt(W/2,840,210);text('تحضيري',W/2,1015,72,C.ink);
+      rr(120,1160,840,128,34,C.deep);text('tahdiri-brown.vercel.app',540,1224,36,C.ink,'center',700,780);
+      text('موادك ودراستك بمكان واحد',540,1400,31,C.muted,'center',600,900);
+    }
+    const sceneIndex=scenes.indexOf(scene);rr(430,1775,220,8,4,'#ffffff1c');rr(430,1775,Math.max(12,220*((sceneIndex+(p))/scenes.length)),8,4,C.brand);
+  }
+  function draw(now) {
+    const dt=Math.min(100,now-lastFrame);lastFrame=now;elapsed+=dt;
+    if(elapsed>=DURATION) elapsed=0;
+    const scene=scenes.find(s=>elapsed>=s.start&&elapsed<s.end)||scenes[0];
+    const p=(elapsed-scene.start)/(scene.end-scene.start);
+    const fade= reduced?1:Math.min(1,p*9,(1-p)*9);
+    ctx.save();ctx.globalAlpha=fade;sceneFrame(scene,p,elapsed);ctx.restore();
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+  function supportedMime() {
+    for(const mime of ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm']) if(MediaRecorder.isTypeSupported(mime)) return mime;
+    return '';
+  }
+  button.addEventListener('click',()=>{
+    if(recording||!('MediaRecorder'in window)||!canvas.captureStream){status.textContent='التسجيل مو مدعوم بهالمتصفح';return;}
+    const mime=supportedMime();if(!mime){status.textContent='صيغة التسجيل مو مدعومة بهالمتصفح';return;}
+    const stream=canvas.captureStream(60);chunks=[];
+    try { recorder=new MediaRecorder(stream,{mimeType:mime}); } catch { stream.getTracks().forEach(track=>track.stop());status.textContent='ما قدرنا نبدأ التسجيل';return; }
+    recording=true;button.disabled=true;button.textContent='جاري التسجيل…';status.textContent='خلي الصفحة مفتوحة، التسجيل ٤٠ ثانية';
+    recorder.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
+    recorder.onerror=()=>{status.textContent='صار خطأ بالتسجيل، جرّب مرة ثانية';};
+    recorder.onstop=()=>{
+      stream.getTracks().forEach(track=>track.stop());
+      const blob=new Blob(chunks,{type:mime});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='tahdiri-promo.webm';a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),60000);recording=false;button.disabled=false;button.textContent='تسجيل الفيديو';status.textContent='خلص التسجيل، الفيديو نزل بجهازك';
+    };
+    elapsed=0;lastFrame=performance.now();recorder.start(1000);
+    window.setTimeout(()=>{if(recorder&&recorder.state==='recording')recorder.stop();},DURATION+150);
+  });
+})();
+</script>
+</body>
+</html>
