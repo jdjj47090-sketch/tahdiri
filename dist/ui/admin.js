@@ -40,10 +40,11 @@ function aiCfg() {
 }
 // ================= الصفحة الرئيسية للأداة =================
 export async function adminView(root, params) {
+    root.append(card(h('h1', null, 'أهلًا بك في لوحة الإدارة'), h('p', { class: 'small muted' }, 'من هنا يمكنك إدارة اشتراكات الطلاب وأدوات المحتوى.')));
     if (currentUser?.role === 'admin') await adminUsersPanel(root);
     const books = await db.all('books');
     const src = await loadSources();
-    root.append(h('h1', null, 'أداة استيراد وإدارة المحتوى'), card(h('p', { class: 'small' }, 'هذه أداة محلية: كل ما تستورده أو تعدّله هنا يُحفظ على هذا الجهاز فقط. لا يستطيع أحد تعديل المحتوى المنشور من خلالها. لنشر المحتوى لكل الطلاب: صدّر «حزمة محتوى» وضعها في مجلد content/ عند نشر الموقع (راجع docs/CONTENT.md).'), h('p', { class: 'small muted' }, 'تعامل مع كل ملف PDF أو صورة كمدخل غير موثوق: نتحقق من النوع والحجم، ولا ننفذ أي شيفرة من داخل الملفات.')));
+    root.append(h('h2', null, 'أداة استيراد وإدارة المحتوى'), card(h('p', { class: 'small' }, 'هذه أداة محلية: كل ما تستورده أو تعدّله هنا يُحفظ على هذا الجهاز فقط. لا يستطيع أحد تعديل المحتوى المنشور من خلالها. لنشر المحتوى لكل الطلاب: صدّر «حزمة محتوى» وضعها في مجلد content/ عند نشر الموقع (راجع docs/CONTENT.md).'), h('p', { class: 'small muted' }, 'تعامل مع كل ملف PDF أو صورة كمدخل غير موثوق: نتحقق من النوع والحجم، ولا ننفذ أي شيفرة من داخل الملفات.')));
     // ---- استيراد كتاب ----
     const reg = src?.books ?? [];
     const pre = reg.find(b => b.id === params.get('registry'));
