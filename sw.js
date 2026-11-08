@@ -1,5 +1,5 @@
 // Service Worker لـ «تحضيري» — يُولَّد بواسطة tools/build.mjs
-const VERSION = '0a0c28565db9';
+const VERSION = '0a0c28565dba';
 const SHELL = [
   "./",
   "./css/app.css",

@@ -164,7 +164,7 @@ export async function settingsView(root) {
         toast('تم الحذف');
         location.hash = '#/';
     }, 'danger')));
-    root.append(h('p', { class: 'small' }, link('سياسة الخصوصية', '#/privacy', 'lnk'), ' · ', link('سجل المصادر', '#/sources', 'lnk'), ' · ', link('أداة المحتوى (للمشرف)', '#/admin', 'lnk')));
+    root.append(h('p', { class: 'small' }, link('سياسة الخصوصية', '#/privacy', 'lnk'), ' · ', link('سجل المصادر', '#/sources', 'lnk')));
 }
 // ================= الخصوصية =================
 export function privacyView(root) {
