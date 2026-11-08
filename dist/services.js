@@ -4,7 +4,7 @@ import { applyResult, emptyReview, markStudied, reschedule } from './review.js';
 import { validatePack } from './contentPack.js';
 export const DEFAULT_SETTINGS = {
     id: 'settings',
-    theme: 'system',
+    theme: 'dark',
     aiEndpoint: '',
     recommendationsEnabled: true,
     dailyMinutes: 120,

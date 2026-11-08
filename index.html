@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="ar" dir="rtl" data-theme="light">
+<html lang="ar" dir="rtl" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>تحضيري</title>
   <meta name="description" content="تحضيري: نظّم تحضيرك اليومي للثالث المتوسط العراقي، ادرس ملخصات صفحات كتابك، واختبر نفسك فيما درسته.">
-  <meta name="theme-color" content="#f6f4ef">
+  <meta name="theme-color" content="#101719">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -16,7 +16,7 @@
   <script>
     // تطبيق المظهر قبل الرسم لتجنب الوميض
     try {
-      var t = localStorage.getItem('tahdiri-theme') || 'system';
+      var t = localStorage.getItem('tahdiri-theme') || 'dark';
       var m = matchMedia('(prefers-color-scheme: dark)').matches;
       document.documentElement.dataset.theme = (t === 'dark' || (t === 'system' && m)) ? 'dark' : 'light';
     } catch (e) {}

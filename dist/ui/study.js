@@ -18,12 +18,14 @@ export function quizView(root) {
         clear(root);
         const q = qz.questions[qz.index];
         const total = qz.questions.length;
-        root.append(h('div', { class: 'row between' }, h('h1', null, 'الاختبار'), h('span', { class: 'muted' }, `سؤال ${qz.index + 1} من ${total}`)), h('div', { class: 'progress' }, h('div', { class: 'progress-bar', style: `width:${Math.round(((qz.index + 1) / total) * 100)}%` })));
+        const percent = Math.round(((qz.index + 1) / total) * 100);
+        root.append(h('div', { class: 'row between quiz-head' }, h('h1', null, 'الاختبار'), h('span', { class: 'muted', 'aria-live': 'polite' }, `سؤال ${qz.index + 1} من ${total}`)), h('div', { class: 'progress quiz-progress', role: 'progressbar', 'aria-label': 'تقدم الاختبار', 'aria-valuenow': percent, 'aria-valuemin': 0, 'aria-valuemax': 100 }, h('div', { class: 'progress-bar', style: `width:${percent}%` })));
         const body = card(h('div', { class: 'row wrap gap-s' }, originBadge(q), badge(TYPE_LABEL[q.type] ?? q.type, 'muted'), q.exam?.year ? badge(`وزاري ${q.exam.year} ${q.exam.round ?? ''}`, 'ok') : null), h('p', { class: 'q-prompt', dir: 'auto' }, q.prompt));
+        body.classList.add('quiz-question-card');
         const cur = qz.answers[q.id] ?? '';
         const set = (v) => { qz.answers[q.id] = v; };
         if (q.type === 'mcq' && q.options) {
-            const group = h('div', { class: 'opts-input', role: 'radiogroup' });
+            const group = h('div', { class: 'opts-input', role: 'radiogroup', 'aria-label': 'خيارات الإجابة' });
             q.options.forEach((o, i) => {
                 const r = h('input', { type: 'radio', name: 'opt', value: o, id: `o${i}`, checked: cur === o });
                 r.onchange = () => set(o);
@@ -32,7 +34,7 @@ export function quizView(root) {
             body.append(group);
         }
         else if (q.type === 'true_false') {
-            const group = h('div', { class: 'opts-input', role: 'radiogroup' });
+            const group = h('div', { class: 'opts-input', role: 'radiogroup', 'aria-label': 'خيارات الإجابة' });
             for (const o of ['صح', 'خطأ']) {
                 const r = h('input', { type: 'radio', name: 'opt', value: o, checked: cur === o });
                 r.onchange = () => set(o);
@@ -50,9 +52,9 @@ export function quizView(root) {
             ta.oninput = () => set(ta.value);
             body.append(ta, h('p', { class: 'muted tiny' }, 'هذا النوع يُصحح تصحيحًا آليًا تقريبيًا، وستتمكن من مقارنة إجابتك بالنموذجية.'));
         }
-        root.append(body, h('div', { class: 'row between' }, qz.index > 0 ? btn([icon('chevronR'), ' السابق'], () => { qz.index--; render(); }, 'ghost') : h('span'), qz.index < total - 1
+        root.append(body, h('div', { class: 'row between quiz-actions' }, qz.index > 0 ? btn([icon('chevronR'), ' السابق'], () => { qz.index--; render(); }, 'soft', { 'aria-label': 'السؤال السابق' }) : h('span'), qz.index < total - 1
             ? btn(['التالي ', icon('chevronL')], () => { qz.index++; render(); }, 'primary')
-            : btn([icon('check'), ' أنهِ الاختبار وصحّح'], finish, 'primary')), h('details', { class: 'muted small' }, h('summary', null, 'قواعد التصحيح'), h('ul', null, ...GRADING_RULES.map(r => h('li', null, r)))));
+            : btn([icon('check'), ' أنهِ الاختبار وصحّح'], finish, 'primary', { 'aria-label': 'إنهاء الاختبار وتصحيح الإجابات' })), h('details', { class: 'muted small' }, h('summary', null, 'قواعد التصحيح'), h('ul', null, ...GRADING_RULES.map(r => h('li', null, r)))));
     };
     const finish = async () => {
         const unanswered = qz.questions.filter(q => !(qz.answers[q.id] ?? '').trim()).length;

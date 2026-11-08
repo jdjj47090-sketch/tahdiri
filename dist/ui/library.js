@@ -41,7 +41,7 @@ export async function subjectView(root, subjectId) {
     root.append(h('h1', null, subjectName(subjectId)));
     if (books.length) {
         root.append(h('h2', null, 'الكتب المستوردة'));
-        const list = h('div', { class: 'stack' });
+        const list = h('div', { class: 'book-grid' });
         for (const b of books) {
             list.append(h('a', { class: 'card card-link', href: `#/book/${encodeURIComponent(b.id)}` }, h('div', { class: 'task-title' }, b.title), h('div', { class: 'muted small' }, `الطبعة: ${b.edition || 'غير محددة'} · المسار: ${b.track} · ${b.pageCount ?? '?'} صفحة`), h('div', { class: 'row wrap gap-s' }, badge(b.verificationStatus === 'verified' ? 'متحقق من المصدر' : 'لم يتم التحقق من الطبعة', b.verificationStatus === 'verified' ? 'ok' : 'warn'), badge(b.extractionStatus === 'done' ? 'تم استخراج النص' : b.extractionStatus === 'partial' ? 'استخراج جزئي' : 'لم يكتمل الاستخراج', b.extractionStatus === 'done' ? 'ok' : 'warn'))));
         }

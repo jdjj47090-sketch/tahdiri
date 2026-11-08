@@ -50,7 +50,7 @@ export function highlightNav() {
             a.removeAttribute('aria-current');
     }
 }
-function logo() {
+export function logo() {
     const ns = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(ns, 'svg');
     svg.setAttribute('viewBox', '0 0 32 32');
@@ -67,10 +67,12 @@ export function applyTheme(t) {
         localStorage.setItem('tahdiri-theme', t);
     }
     catch { /* ignore */ }
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#14181f' : '#f6f4ef');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#101719' : '#f4f8f7');
     const b = document.getElementById('theme-btn');
     if (b) {
         b.replaceChildren(icon(dark ? 'sun' : 'moon'));
+        b.setAttribute('aria-label', dark ? 'التبديل إلى المظهر الفاتح' : 'التبديل إلى المظهر الداكن');
+        b.title = dark ? 'المظهر الفاتح' : 'المظهر الداكن';
     }
 }
 // التثبيت كتطبيق PWA

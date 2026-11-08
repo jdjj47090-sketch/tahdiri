@@ -8,6 +8,7 @@ import { getSettings, saveDrafts, updateTask, booksForSubject, pagesForBook, sum
 import { dueItems } from '../review.js';
 import { planQuiz } from '../quiz.js';
 import { MAX_IMAGE_BYTES, isImageHeader, ocrImage } from '../pdfImport.js';
+import { currentUser } from './auth.js';
 const PRIORITY_LABEL = { 1: 'عالية', 2: 'متوسطة', 3: 'منخفضة' };
 const STATUS_LABEL = { pending: 'لم تبدأ', in_progress: 'قيد الدراسة', paused: 'متوقفة مؤقتًا', done: 'منجزة' };
 // ================= الصفحة الرئيسية =================
@@ -68,7 +69,15 @@ export async function homeView(root) {
     const tasks = sortTasks((await db.all('tasks')).filter(t => t.status !== 'done'));
     const settings = await getSettings();
     const due = settings.recommendationsEnabled ? dueItems(await db.all('review'), new Date().toISOString()) : [];
-    root.append(h('section', { class: 'hero' }, h('h1', { class: 'hero-title' }, 'شنو عندك تحضير اليوم؟'), h('p', { class: 'muted' }, 'اكتب تحضيراتك كما تكتبها بدفترك، أو صوّر جدول الواجبات أو السبورة.'), ta, h('div', { class: 'row wrap' }, btn([icon('check'), ' استخرج المهام'], extract, 'primary'), btn([icon('camera'), ' من صورة'], fromImage, 'soft')), ocrStatus, h('p', { class: 'muted tiny' }, 'قراءة الصور تتم على جهازك ولا تُرسل الصورة لأي خادم.')));
+    const name = currentUser?.display_name?.trim() || currentUser?.email?.split('@')[0] || '';
+    root.append(h('section', { class: 'hero-greeting' }, h('h1', null, `أهلًا بك${name ? `، ${name}` : ''}`), h('p', null, 'خطوة صغيرة اليوم تصنع فرقًا كبيرًا في استعدادك.')));
+    root.append(h('section', { class: 'hero' }, h('h2', { class: 'hero-title' }, 'شنو عندك تحضير اليوم؟'), h('p', { class: 'muted' }, 'اكتب تحضيراتك كما تكتبها بدفترك، أو صوّر جدول الواجبات أو السبورة.'), ta, h('div', { class: 'row wrap' }, btn([icon('check'), ' استخرج المهام'], extract, 'primary'), btn([icon('camera'), ' من صورة'], fromImage, 'soft')), ocrStatus, h('p', { class: 'muted tiny' }, 'قراءة الصور تتم على جهازك ولا تُرسل الصورة لأي خادم.')));
+    root.append(h('nav', { class: 'quick-actions', 'aria-label': 'إجراءات سريعة' },
+        h('a', { class: 'quick-action', href: '#/tasks' }, icon('list', 22), h('strong', null, 'جدول التحضير')),
+        h('a', { class: 'quick-action', href: '#/library' }, icon('book', 22), h('strong', null, 'استكشف المواد')),
+        h('a', { class: 'quick-action', href: '#/review' }, icon('repeat', 22), h('strong', null, 'مراجعة مستحقة')),
+        h('a', { class: 'quick-action', href: '#/progress' }, icon('chart', 22), h('strong', null, 'تابع تقدمك')),
+    ));
     const list = h('div', { class: 'stack' });
     if (tasks.length) {
         for (const t of tasks.slice(0, 3))

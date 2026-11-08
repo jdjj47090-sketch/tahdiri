@@ -169,9 +169,79 @@ export async function adminView(root, params) {
 
 async function adminUsersPanel(root) {
     const wrap = card(h('h2', null, 'إدارة الاشتراكات'));
-    const email = h('input', { type: 'email', dir: 'ltr', required: true }); const name = h('input', { type: 'text', maxlength: '80' }); const notice = h('p', { class: 'small muted' });
-    wrap.append(h('div', { class: 'row wrap' }, field('البريد الإلكتروني', email), field('اسم الطالب', name), btn('إنشاء حساب باشتراك 30 يومًا', async () => { try { const made = await apiRequest('/api/admin/users', 'POST', { email: email.value, display_name: name.value }); const box = h('div', { class: 'generated-password' }, h('strong', null, 'احفظ كلمة المرور الآن — لن تظهر مرة أخرى'), h('code', { dir: 'ltr' }, made.password), btn('نسخ', async () => { await navigator.clipboard.writeText(made.password); toast('نُسخت كلمة المرور'); }, 'soft')); wrap.prepend(box); email.value = ''; name.value = ''; await load(); } catch (e) { notice.textContent = e.message; } }, 'primary'), notice));
-    const list = h('div'); wrap.append(list); async function load() { const data = await apiRequest('/api/admin/users', 'GET'); list.replaceChildren(...data.users.map(u => h('div', { class: 'row between wrap admin-row' }, h('div', null, h('strong', null, u.display_name || u.email), h('div', { class: 'small muted', dir: 'ltr' }, `${u.email} · ${u.subscription_status} · ${u.subscription_end ? new Date(u.subscription_end).toLocaleDateString('ar-IQ') : '—'}`)), u.role === 'admin' ? null : h('div', { class: 'row' }, btn('تجديد 30 يومًا', async () => { try { await apiRequest(`/api/admin/users/${u.id}/renew`, 'POST'); await load(); } catch (e) { toast(e.message, 'err'); } }, 'soft'), btn('إيقاف', async () => { try { await apiRequest(`/api/admin/users/${u.id}/deactivate`, 'POST'); await load(); } catch (e) { toast(e.message, 'err'); } }, 'ghost'))))); } await load(); root.append(wrap);
+    const email = h('input', { type: 'email', dir: 'ltr', required: true, autocomplete: 'email' });
+    const name = h('input', { type: 'text', maxlength: '80', autocomplete: 'name' });
+    const notice = h('p', { class: 'small muted', role: 'status', 'aria-live': 'polite' });
+    const create = btn('إنشاء حساب باشتراك 30 يومًا', async () => {
+        if (!email.reportValidity()) return;
+        create.disabled = true;
+        create.setAttribute('aria-busy', 'true');
+        create.textContent = 'جارٍ إنشاء الحساب…';
+        notice.textContent = '';
+        try {
+            const made = await apiRequest('/api/admin/users', 'POST', { email: email.value, display_name: name.value });
+            const box = h('section', { class: 'generated-password', role: 'status' },
+                h('strong', null, 'احفظ كلمة المرور الآن — لن تظهر مرة أخرى'),
+                h('p', { class: 'small' }, 'انسخها وأرسلها للطالب بطريقة آمنة قبل إغلاق هذه الصفحة.'),
+                h('code', { dir: 'ltr' }, made.password),
+                btn('نسخ كلمة المرور', async () => {
+                    try { await navigator.clipboard.writeText(made.password); toast('نُسخت كلمة المرور'); }
+                    catch { toast('تعذّر النسخ تلقائيًا؛ حدّد كلمة المرور وانسخها يدويًا', 'warn'); }
+                }, 'soft', { 'aria-label': 'نسخ كلمة المرور الجديدة' }));
+            wrap.prepend(box);
+            email.value = '';
+            name.value = '';
+            await load();
+        } catch (e) {
+            notice.textContent = e.message;
+        } finally {
+            create.disabled = false;
+            create.removeAttribute('aria-busy');
+            create.textContent = 'إنشاء حساب باشتراك 30 يومًا';
+        }
+    }, 'primary');
+    wrap.append(h('div', { class: 'admin-create-form' }, field('البريد الإلكتروني', email), field('اسم الطالب', name), create), notice);
+    const list = h('div', { class: 'table-wrap admin-users', 'aria-live': 'polite' }, h('p', { class: 'muted small' }, 'جارٍ تحميل حسابات الطلاب…'));
+    wrap.append(list);
+    async function load() {
+        list.setAttribute('aria-busy', 'true');
+        try {
+            const data = await apiRequest('/api/admin/users', 'GET');
+            const now = new Date();
+            const rows = data.users.map(u => {
+                const end = u.subscription_end ? new Date(u.subscription_end) : null;
+                const active = u.subscription_status === 'active' && end && end > now;
+                const expired = u.subscription_status === 'active' && !active;
+                const statusText = active ? 'نشط' : expired ? 'منتهي' : 'معطّل';
+                const statusKind = active ? 'active' : expired ? 'expired' : 'inactive';
+                const actions = u.role === 'admin' ? h('span', { class: 'muted small' }, 'مدير النظام') : h('div', { class: 'admin-user-actions' },
+                    btn('تجديد 30 يومًا', async () => {
+                        try { await apiRequest(`/api/admin/users/${u.id}/renew`, 'POST'); await load(); }
+                        catch (e) { toast(e.message, 'err'); }
+                    }, 'soft'),
+                    btn('تعطيل', async () => {
+                        try { await apiRequest(`/api/admin/users/${u.id}/deactivate`, 'POST'); await load(); }
+                        catch (e) { toast(e.message, 'err'); }
+                    }, 'danger'));
+                const endText = end ? end.toLocaleDateString('ar-IQ', { day: 'numeric', month: 'short', year: 'numeric' }) : 'غير محدد';
+                return h('tr', null,
+                    h('td', { 'data-label': 'المستخدم' }, h('strong', null, u.display_name || 'طالب'), h('div', { class: 'small muted', dir: 'ltr' }, u.email)),
+                    h('td', { 'data-label': 'الحالة' }, h('span', { class: `badge user-status-${statusKind}` }, statusText)),
+                    h('td', { 'data-label': 'نهاية الاشتراك' }, h('time', { datetime: end?.toISOString() }, endText)),
+                    h('td', { 'data-label': 'الإجراءات' }, actions));
+            });
+            const table = h('table', { class: 'admin-user-table' },
+                h('thead', null, h('tr', null, ...['المستخدم', 'الحالة', 'نهاية الاشتراك', 'الإجراءات'].map(label => h('th', { scope: 'col' }, label)))),
+                h('tbody', null, ...rows));
+            list.replaceChildren(rows.length ? table : emptyState('لا توجد حسابات بعد', 'أنشئ حساب الطالب الأول من النموذج أعلاه.'));
+        } catch (e) {
+            list.replaceChildren(emptyState('تعذّر تحميل الحسابات', e.message));
+        } finally {
+            list.removeAttribute('aria-busy');
+        }
+    }
+    root.append(wrap);
+    await load();
 }
 function field(label, el) {
     return h('label', { class: 'field' }, h('span', null, label), el);
