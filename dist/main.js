@@ -9,6 +9,7 @@ import { adminView, adminBookView, adminPageView, adminQuestionsView, adminExamV
 import { getSettings, syncPublishedPacks } from './services.js';
 import { searchView } from './ui/searchView.js';
 import { malzamaHome, malzamaSubject, malzamaBook, malzamaLesson, malzamaFind } from './ui/malzama.js';
+import { currentUser, refreshUser, authScreen, subscriptionBanner, apiRequest } from './ui/auth.js';
 const routes = [
     [/^\/?$/, r => homeView(r), 'الرئيسية'],
     [/^\/prep\/review$/, r => draftsView(r), 'مراجعة المهام'],
@@ -47,6 +48,10 @@ async function render() {
     const [path, query] = raw.split('?');
     const seq = ++renderSeq;
     clear(view);
+    if (!currentUser) { authScreen(view, () => { void render(); }); return; }
+    if (currentUser.must_change_password) { authScreen(view, () => { void render(); }, true); return; }
+    if (pathIsAdmin() && currentUser.role !== 'admin') { view.append(emptyState('غير مصرح', 'هذه الصفحة مخصصة للإدارة.', link('الرئيسية', '#/'))); return; }
+    const banner = subscriptionBanner(); if (banner) view.append(banner);
     highlightNav();
     for (const [re, fn, title] of routes) {
         const m = re.exec(path);
@@ -57,6 +62,8 @@ async function render() {
         view.append(container);
         try {
             await fn(container, m, new URLSearchParams(query ?? ''));
+            const paid = currentUser.subscription_status === 'active' && currentUser.subscription_end && new Date(currentUser.subscription_end) > new Date();
+            if (!paid) for (const button of container.querySelectorAll('button')) if (/الذكاء الاصطناعي|بالذكاء الاصطناعي/.test(button.textContent)) { button.disabled = true; button.title = 'تحتاج إلى اشتراك فعّال'; }
         }
         catch (e) {
             console.error(e);
@@ -70,6 +77,7 @@ async function render() {
     }
     view.append(emptyState('الصفحة غير موجودة', '', link('الرئيسية', '#/')));
 }
+function pathIsAdmin() { return (location.hash || '').slice(1).split('?')[0].startsWith('/admin'); }
 async function boot() {
     document.body.append(buildShell());
     try {
@@ -82,6 +90,7 @@ async function boot() {
         toast('تعذّر فتح التخزين المحلي؛ قد لا يُحفظ تقدّمك (وضع التصفح الخاص؟).', 'err');
     }
     window.addEventListener('hashchange', () => void render());
+    try { await refreshUser(); } catch { /* API unavailable: show login */ }
     await render();
     syncPublishedPacks().then(n => {
         if (!n.length)

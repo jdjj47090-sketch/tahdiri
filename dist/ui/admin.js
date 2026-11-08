@@ -5,7 +5,8 @@ import { h, btn, link, card, badge, emptyState, toast, clear, downloadFile, pick
 import { loadSources } from './state.js';
 import { SUBJECTS, subjectName } from '../subjects.js';
 import { db, nowIso, uid } from '../db.js';
-import { pagesForBook, chaptersForBook, importPack, getAiToken, setAiToken, getSettings, saveSettings } from '../services.js';
+import { pagesForBook, chaptersForBook, importPack } from '../services.js';
+import { currentUser, apiRequest } from './auth.js';
 import { MAX_PDF_BYTES, isPdfHeader, sha256Hex, openPdf, extractPageText, renderPageToCanvas, ocrImage } from '../pdfImport.js';
 import { generateFromPage, termsFromPages } from '../generator.js';
 import { suggestLinks, groupSimilar } from '../linker.js';
@@ -35,10 +36,11 @@ async function ensureDoc(book) {
     return doc;
 }
 function aiCfg() {
-    return getSettings().then(s => ({ endpoint: s.aiEndpoint, token: getAiToken() }));
+    return Promise.resolve({ endpoint: '/api/ai' });
 }
 // ================= الصفحة الرئيسية للأداة =================
 export async function adminView(root, params) {
+    if (currentUser?.role === 'admin') await adminUsersPanel(root);
     const books = await db.all('books');
     const src = await loadSources();
     root.append(h('h1', null, 'أداة استيراد وإدارة المحتوى'), card(h('p', { class: 'small' }, 'هذه أداة محلية: كل ما تستورده أو تعدّله هنا يُحفظ على هذا الجهاز فقط. لا يستطيع أحد تعديل المحتوى المنشور من خلالها. لنشر المحتوى لكل الطلاب: صدّر «حزمة محتوى» وضعها في مجلد content/ عند نشر الموقع (راجع docs/CONTENT.md).'), h('p', { class: 'small muted' }, 'تعامل مع كل ملف PDF أو صورة كمدخل غير موثوق: نتحقق من النوع والحجم، ولا ننفذ أي شيفرة من داخل الملفات.')));
@@ -161,11 +163,14 @@ export async function adminView(root, params) {
             toast(e.message, 'err');
         }
     }))));
-    // ---- الذكاء الاصطناعي ----
-    const s = await getSettings();
-    const ep = h('input', { type: 'url', dir: 'ltr', value: s.aiEndpoint, placeholder: 'https://your-proxy.example.com' });
-    const tk = h('input', { type: 'password', dir: 'ltr', value: getAiToken(), placeholder: 'رمز المشرف للخادم الوسيط' });
-    root.append(card(h('h2', null, 'الذكاء الاصطناعي (اختياري)'), h('p', { class: 'small' }, 'توليد الملخصات والأسئلة بالذكاء الاصطناعي يتطلب خادمًا وسيطًا تشغّله أنت (server/ai-proxy.mjs) ومفتاح Anthropic API مدفوعًا. اشتراك Claude لا يتضمن API مجانيًا. المفتاح يبقى في الخادم ولا يوضع هنا أبدًا.'), field('عنوان الخادم الوسيط', ep), field('رمز المشرف (يُحفظ لهذه الجلسة فقط)', tk), btn('حفظ', async () => { await saveSettings({ aiEndpoint: ep.value.trim() }); setAiToken(tk.value.trim()); toast('تم الحفظ'); })));
+    root.append(card(h('h2', null, 'الذكاء الاصطناعي'), h('p', { class: 'small' }, 'توليد الملخصات والأسئلة متاح للمشتركين الفعّالين.')));
+}
+
+async function adminUsersPanel(root) {
+    const wrap = card(h('h2', null, 'إدارة الاشتراكات'));
+    const email = h('input', { type: 'email', dir: 'ltr', required: true }); const name = h('input', { type: 'text', maxlength: '80' }); const notice = h('p', { class: 'small muted' });
+    wrap.append(h('div', { class: 'row wrap' }, field('البريد الإلكتروني', email), field('اسم الطالب', name), btn('إنشاء حساب باشتراك 30 يومًا', async () => { try { const made = await apiRequest('/api/admin/users', 'POST', { email: email.value, display_name: name.value }); const box = h('div', { class: 'generated-password' }, h('strong', null, 'احفظ كلمة المرور الآن — لن تظهر مرة أخرى'), h('code', { dir: 'ltr' }, made.password), btn('نسخ', async () => { await navigator.clipboard.writeText(made.password); toast('نُسخت كلمة المرور'); }, 'soft')); wrap.prepend(box); email.value = ''; name.value = ''; await load(); } catch (e) { notice.textContent = e.message; } }, 'primary'), notice));
+    const list = h('div'); wrap.append(list); async function load() { const data = await apiRequest('/api/admin/users', 'GET'); list.replaceChildren(...data.users.map(u => h('div', { class: 'row between wrap admin-row' }, h('div', null, h('strong', null, u.display_name || u.email), h('div', { class: 'small muted', dir: 'ltr' }, `${u.email} · ${u.subscription_status} · ${u.subscription_end ? new Date(u.subscription_end).toLocaleDateString('ar-IQ') : '—'}`)), u.role === 'admin' ? null : h('div', { class: 'row' }, btn('تجديد 30 يومًا', async () => { try { await apiRequest(`/api/admin/users/${u.id}/renew`, 'POST'); await load(); } catch (e) { toast(e.message, 'err'); } }, 'soft'), btn('إيقاف', async () => { try { await apiRequest(`/api/admin/users/${u.id}/deactivate`, 'POST'); await load(); } catch (e) { toast(e.message, 'err'); } }, 'ghost'))))); } await load(); root.append(wrap);
 }
 function field(label, el) {
     return h('label', { class: 'field' }, h('span', null, label), el);
@@ -305,7 +310,7 @@ export async function adminBookView(root, bookId) {
     }), btn('ملخصات بالذكاء الاصطناعي للصفحات بلا ملخص', async () => {
         const cfg = await aiCfg();
         if (!cfg.endpoint) {
-            toast('اضبط الخادم الوسيط أولًا', 'warn');
+            toast('توليد الذكاء الاصطناعي يتطلب اشتراكًا فعّالًا', 'warn');
             return;
         }
         const todo = pages.filter(p => (p.status === 'ok' || p.reviewed) && !sums.has(p.printedPage));
@@ -452,7 +457,7 @@ export async function adminPageView(root, bookId, pdfIndex) {
     }, 'primary'), btn('توليد بالذكاء الاصطناعي', async () => {
         const cfg = await aiCfg();
         if (!cfg.endpoint) {
-            toast('اضبط الخادم الوسيط أولًا', 'warn');
+            toast('توليد الذكاء الاصطناعي يتطلب اشتراكًا فعّالًا', 'warn');
             return;
         }
         if (page.status !== 'ok' && !page.reviewed) {
@@ -471,7 +476,7 @@ export async function adminPageView(root, bookId, pdfIndex) {
     }), btn('أسئلة بالذكاء الاصطناعي', async () => {
         const cfg = await aiCfg();
         if (!cfg.endpoint) {
-            toast('اضبط الخادم الوسيط أولًا', 'warn');
+            toast('توليد الذكاء الاصطناعي يتطلب اشتراكًا فعّالًا', 'warn');
             return;
         }
         try {

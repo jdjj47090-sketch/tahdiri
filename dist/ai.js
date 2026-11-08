@@ -1,12 +1,10 @@
 import { textHash } from './arabic.js';
 const SECTION_KINDS = new Set(['idea', 'explain', 'definitions', 'reasons', 'laws', 'comparisons', 'memorize', 'mistakes', 'unreadable']);
 async function call(cfg, path, body) {
-    if (!cfg.endpoint)
-        throw new Error('لم يتم ضبط عنوان الخادم الوسيط في الإعدادات.');
-    const res = await fetch(cfg.endpoint.replace(/\/$/, '') + path, {
+    const res = await fetch('/api/ai', {
         method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${cfg.token}` },
-        body: JSON.stringify(body),
+        credentials: 'same-origin', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ...body, task: path.endsWith('summarize') ? 'summarize' : 'questions' }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok)

@@ -312,6 +312,16 @@ th { color: var(--muted); font-weight: 600; white-space: nowrap; }
 .mz-exam-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .82rem; color: var(--muted); margin: 6px 0; }
 .mz-copy-fallback { position: fixed; top: -1000px; }
 
+.auth-view { min-height: 60vh; display: grid; place-items: center; }
+.auth-card { width: min(100%, 460px); padding: 24px; }
+.auth-card h1 { margin-top: 0; }
+.auth-message { color: var(--err); min-height: 1.4em; }
+.subscription-banner { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 14px auto 0; padding: 10px 14px; border-radius: 12px; max-width: 1100px; }
+.subscription-banner.active { background: var(--ok-bg); color: var(--ok); }
+.subscription-banner.inactive { background: var(--warn-bg); color: var(--warn); }
+.generated-password { display: grid; gap: 8px; margin: 12px 0; padding: 14px; border: 2px solid var(--accent); border-radius: 12px; background: var(--warn-bg); }
+.generated-password code { font-size: 1.1rem; user-select: all; }
+
 @media print {
   .topbar, .nav, .toasts, .no-print, .crumbs { display: none !important; }
   .app { display: block; }

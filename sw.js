@@ -1,5 +1,5 @@
 // Service Worker لـ «تحضيري» — يُولَّد بواسطة tools/build.mjs
-const VERSION = '0a0c28565db8';
+const VERSION = '0a0c28565db9';
 const SHELL = [
   "./",
   "./css/app.css",
@@ -25,6 +25,7 @@ const SHELL = [
   "./dist/textQuality.js",
   "./dist/types.js",
   "./dist/ui/admin.js",
+  "./dist/ui/auth.js",
   "./dist/ui/dom.js",
   "./dist/ui/info.js",
   "./dist/ui/library.js",
@@ -62,6 +63,8 @@ self.addEventListener('fetch', event => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin === location.origin) {
+    // لا تُخزَّن استجابات API أو صفحات المصادقة.
+    if (url.pathname.includes('/api/')) return;
     // المحتوى المنشور وسجل المصادر: الشبكة أولًا ثم النسخة المخزنة
     if (url.pathname.includes('/content/') || url.pathname.endsWith('/data/sources.json')) {
       event.respondWith(fetch(req).then(res => {

@@ -17,21 +17,6 @@ export async function saveSettings(s) {
     await db.put('settings', merged);
     return merged;
 }
-// رمز الخادم الوسيط يُحفظ في sessionStorage فقط (لا يُصدَّر ضمن النسخة الاحتياطية)
-export function getAiToken() {
-    try {
-        return sessionStorage.getItem('tahdiri-ai-token') ?? '';
-    }
-    catch {
-        return '';
-    }
-}
-export function setAiToken(t) {
-    try {
-        sessionStorage.setItem('tahdiri-ai-token', t);
-    }
-    catch { /* ignore */ }
-}
 // ---------- المهام ----------
 export async function saveDrafts(drafts, source) {
     const now = nowIso();
