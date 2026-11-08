@@ -53,7 +53,7 @@ export async function subjectView(root, subjectId) {
     if (official.length) {
         root.append(h('h2', null, 'الكتاب الرسمي (من سجل المصادر)'));
         for (const o of official) {
-            root.append(card(h('div', { class: 'task-title' }, o.title), h('p', { class: 'small' }, `الطبعة المذكورة: ${o.editionClaimed}`), h('p', { class: 'small muted' }, 'الحالة: لم يُنزَّل ولم يُتحقق منه بعد. الرابط من موقع المديرية العامة للمناهج كما نقله مصدر ثانوي؛ قد لا يعمل أو قد تكون هناك طبعة أحدث.'), h('div', { class: 'row wrap' }, h('a', { class: 'btn btn-soft', href: o.url, target: '_blank', rel: 'noopener noreferrer' }, icon('download'), ' فتح الرابط الرسمي'), link([icon('upload'), ' استيراد بعد التنزيل'], `#/admin?registry=${o.id}`))));
+            root.append(card(h('div', { class: 'task-title' }, o.title), h('p', { class: 'small' }, `الطبعة المذكورة: ${o.editionClaimed}`), h('p', { class: 'small muted' }, 'الحالة: لم يُنزَّل ولم يُتحقق منه بعد. الرابط من موقع المديرية العامة للمناهج كما نقله مصدر ثانوي؛ قد لا يعمل أو قد تكون هناك طبعة أحدث.'), h('div', { class: 'row wrap' }, h('a', { class: 'btn btn-soft', href: o.url, target: '_blank', rel: 'noopener noreferrer' }, icon('download'), ' فتح الرابط الرسمي'), link([icon('upload'), ' استيراد بعد التنزيل'], `#/s-40?registry=${o.id}`))));
         }
     }
 }
@@ -81,7 +81,7 @@ export async function bookView(root, bookId) {
     }
     root.append(h('h2', null, 'الصفحات'), h('div', { class: 'legend small' }, h('span', { class: 'pg pg-studied' }, '١'), ' درستها ', h('span', { class: 'pg pg-review' }, '١'), ' تحتاج مراجعة ', h('span', { class: 'pg pg-sum' }, '١'), ' لها ملخص ', h('span', { class: 'pg pg-bad' }, '١'), ' نص ضعيف'));
     if (!pages.length) {
-        root.append(emptyState('لم تُستخرج صفحات هذا الكتاب بعد', 'افتح أداة المحتوى لاستخراج النص.', link('أداة المحتوى', `#/admin/book/${encodeURIComponent(bookId)}`)));
+        root.append(emptyState('لم تُستخرج صفحات هذا الكتاب بعد', 'افتح أداة المحتوى لاستخراج النص.', link('أداة المحتوى', `#/s-40/book/${encodeURIComponent(bookId)}`)));
     }
     else {
         const grid = h('div', { class: 'page-grid' });

@@ -62,7 +62,7 @@ export async function examsView(root) {
     else
         log.append(h('p', { class: 'muted' }, 'تعذّر تحميل سجل المصادر.'));
     if (pending.length)
-        log.append(h('p', null, `${pending.length} سؤال منسوب للوزاري ينتظر التحقق في `, link('أداة المحتوى', '#/admin', 'lnk'), '.'));
+        log.append(h('p', null, `${pending.length} سؤال منسوب للوزاري ينتظر التحقق في `, link('أداة المحتوى', '#/s-40', 'lnk'), '.'));
     root.append(log);
 }
 // ================= سجل المصادر =================
@@ -165,8 +165,8 @@ export async function settingsView(root) {
         location.hash = '#/';
     }, 'danger')));
     root.append(h('p', { class: 'small' }, link('سياسة الخصوصية', '#/privacy', 'lnk'), ' · ', link('سجل المصادر', '#/sources', 'lnk')));
-    root.querySelectorAll('a[href^="#/admin"], a, button').forEach(el => {
-        if (el.getAttribute('href')?.startsWith('#/admin') || /أداة المحتوى\s*\(للمشرف\)/.test(el.textContent)) el.remove();
+    root.querySelectorAll('a[href^="#/s-40"], a, button').forEach(el => {
+        if (el.getAttribute('href')?.startsWith('#/s-40') || /أداة المحتوى\s*\(للمشرف\)/.test(el.textContent)) el.remove();
     });
 }
 // ================= الخصوصية =================

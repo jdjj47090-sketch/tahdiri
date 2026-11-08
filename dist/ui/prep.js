@@ -248,7 +248,7 @@ export async function finishView(root, taskId) {
         root.append(card(h('label', { class: 'field' }, h('span', null, 'الكتاب'), sel)));
     }
     if (!book) {
-        root.append(card(h('h2', null, 'لا يوجد كتاب مستورد لهذه المادة'), h('p', null, 'لا يمكن إنشاء اختبار أو عرض ملخصات قبل استيراد كتاب المادة الرسمي واستخراج صفحاته. لن نختبرك بأسئلة من خارج كتابك.'), h('div', { class: 'row wrap' }, link('استيراد الكتاب', '#/admin'), btn('سجّل المهمة كمنجزة', async () => { t.status = 'done'; t.progress = 100; await updateTask(t); location.hash = '#/tasks'; }))));
+        root.append(card(h('h2', null, 'لا يوجد كتاب مستورد لهذه المادة'), h('p', null, 'لا يمكن إنشاء اختبار أو عرض ملخصات قبل استيراد كتاب المادة الرسمي واستخراج صفحاته. لن نختبرك بأسئلة من خارج كتابك.'), h('div', { class: 'row wrap' }, link('استيراد الكتاب', '#/s-40'), btn('سجّل المهمة كمنجزة', async () => { t.status = 'done'; t.progress = 100; await updateTask(t); location.hash = '#/tasks'; }))));
         return;
     }
     if (!t.pages.length) {
@@ -292,7 +292,7 @@ export async function finishView(root, taskId) {
         if (lessonLinks.length)
             planBox.append(h('p', null, 'ملخص الدرس وأسئلة مراجعته في «ملخصاتي»: ', ...lessonLinks.map((l, i) => [i ? '، ' : '', link(l.title, `#/m/l/${encodeURIComponent(l.id)}`, 'lnk')]).flat()));
         if (!plan.questions.length) {
-            planBox.append(h('p', null, 'لا توجد أسئلة اختبار مرتبطة بهذه الصفحات حتى الآن. يمكن توليد أسئلة تدريبية من نص الصفحات في أداة المحتوى.'), link('أداة المحتوى', `#/admin/book/${encodeURIComponent(book.id)}`));
+            planBox.append(h('p', null, 'لا توجد أسئلة اختبار مرتبطة بهذه الصفحات حتى الآن. يمكن توليد أسئلة تدريبية من نص الصفحات في أداة المحتوى.'), link('أداة المحتوى', `#/s-40/book/${encodeURIComponent(book.id)}`));
             return;
         }
         const c = plan.countsByOrigin;

@@ -98,7 +98,7 @@ export async function adminView(root, params) {
         const dup = (await db.all('books')).find(b => b.sha256 === hash);
         if (dup) {
             toast(`هذا الملف مستورد مسبقًا باسم «${dup.title}»`, 'warn');
-            location.hash = `#/admin/book/${encodeURIComponent(dup.id)}`;
+            location.hash = `#/s-40/book/${encodeURIComponent(dup.id)}`;
             return;
         }
         clear(progress);
@@ -129,7 +129,7 @@ export async function adminView(root, params) {
         });
         line.textContent = `انتهى: ${counts.ok} سليمة، ${counts.low} ضعيفة، ${counts.failed} فاشلة، ${counts.empty} فارغة${cancelFlag ? ' (أُوقف قبل الاكتمال)' : ''}.`;
         toast('تم استيراد الكتاب');
-        location.hash = `#/admin/book/${encodeURIComponent(book.id)}`;
+        location.hash = `#/s-40/book/${encodeURIComponent(book.id)}`;
     };
     root.append(card(h('h2', null, 'استيراد كتاب PDF'), h('p', { class: 'small muted' }, 'نزّل الكتاب من موقع المديرية العامة للمناهج أولًا، ثم استورده هنا. لا نعيد نشر ملف PDF نفسه؛ نحفظ النص المستخرج لكل صفحة مع رقمها.'), h('div', { class: 'grid2' }, field('من سجل المصادر', regSel), field('المادة', subj), field('العنوان', title), field('المسار', track), field('الطبعة (إلزامي)', edition), field('السنة الدراسية', year), field('رابط المصدر', url), field('إزاحة الترقيم (رقم صفحة PDF − رقم الصفحة المطبوعة)', offset)), field('حقوق الاستخدام المعروفة', rights), h('label', { class: 'row small' }, autoOcr, ' تشغيل OCR تلقائيًا للصفحات المصورة أو المشوهة (أبطأ)'), btn([icon('upload'), ' اختر ملف PDF وابدأ'], () => void doImport(), 'primary'), progress));
     // ---- الكتب المستوردة ----
@@ -141,12 +141,12 @@ export async function adminView(root, params) {
         const c = { ok: 0, low_quality: 0, failed: 0, empty: 0 };
         for (const p of pages)
             c[p.status]++;
-        listCard.append(h('div', { class: 'row between wrap admin-row' }, h('div', null, h('strong', null, b.title), h('div', { class: 'small muted' }, `${subjectName(b.subjectId)} · ${b.edition} · ${pages.length}/${b.pageCount ?? '?'} صفحة · سليمة ${c.ok} · ضعيفة ${c.low_quality} · فاشلة ${c.failed} · فارغة ${c.empty}`)), link('إدارة', `#/admin/book/${encodeURIComponent(b.id)}`)));
+        listCard.append(h('div', { class: 'row between wrap admin-row' }, h('div', null, h('strong', null, b.title), h('div', { class: 'small muted' }, `${subjectName(b.subjectId)} · ${b.edition} · ${pages.length}/${b.pageCount ?? '?'} صفحة · سليمة ${c.ok} · ضعيفة ${c.low_quality} · فاشلة ${c.failed} · فارغة ${c.empty}`)), link('إدارة', `#/s-40/book/${encodeURIComponent(b.id)}`)));
     }
     root.append(listCard);
     // ---- الوزاريات ----
     const pending = (await db.all('questions')).filter(q => q.origin === 'ministerial_unverified' || (q.origin === 'ministerial_verified' && q.reviewStatus !== 'verified'));
-    root.append(card(h('h2', null, 'الأسئلة الوزارية'), h('p', { class: 'small' }, 'أدخل السؤال من ملف الامتحان الأصلي بعد قراءته، مع الرابط والسنة والدور ورقم الصفحة في الملف. لا يُوسم «موثقًا» إلا بعد التحقق من الأصل.'), h('div', { class: 'row wrap' }, link('+ إضافة سؤال وزاري', '#/admin/exam/new'), pending.length ? badge(`${pending.length} بانتظار التحقق`, 'warn') : null), ...pending.slice(0, 20).map(q => h('div', { class: 'row between admin-row' }, h('span', { class: 'small' }, `${subjectName(q.subjectId)} · ${q.exam?.year ?? '؟'} ${q.exam?.round ?? ''} · ${q.prompt.slice(0, 60)}`), link('تحقق', `#/admin/exam/${q.id}`, 'btn btn-ghost')))));
+    root.append(card(h('h2', null, 'الأسئلة الوزارية'), h('p', { class: 'small' }, 'أدخل السؤال من ملف الامتحان الأصلي بعد قراءته، مع الرابط والسنة والدور ورقم الصفحة في الملف. لا يُوسم «موثقًا» إلا بعد التحقق من الأصل.'), h('div', { class: 'row wrap' }, link('+ إضافة سؤال وزاري', '#/s-40/exam/new'), pending.length ? badge(`${pending.length} بانتظار التحقق`, 'warn') : null), ...pending.slice(0, 20).map(q => h('div', { class: 'row between admin-row' }, h('span', { class: 'small' }, `${subjectName(q.subjectId)} · ${q.exam?.year ?? '؟'} ${q.exam?.round ?? ''} · ${q.prompt.slice(0, 60)}`), link('تحقق', `#/s-40/exam/${q.id}`, 'btn btn-ghost')))));
     // ---- حزم المحتوى ----
     root.append(card(h('h2', null, 'حزم المحتوى'), h('div', { class: 'row wrap' }, btn([icon('download'), ' تصدير كل المحتوى'], () => void exportPack()), btn([icon('upload'), ' استيراد حزمة'], async () => {
         const f = await pickFile('application/json,.json');
@@ -248,7 +248,7 @@ async function exportPack(bookId) {
 export async function adminBookView(root, bookId) {
     const book = await db.get('books', bookId);
     if (!book) {
-        root.append(emptyState('الكتاب غير موجود', '', link('الأداة', '#/admin')));
+        root.append(emptyState('الكتاب غير موجود', '', link('الأداة', '#/s-40')));
         return;
     }
     const pages = await pagesForBook(bookId);
@@ -256,7 +256,7 @@ export async function adminBookView(root, bookId) {
     const sums = new Map((await db.byIndex('summaries', 'bookId', bookId)).map(s => [s.printedPage, s]));
     const qs = (await db.all('questions')).filter(q => q.bookId === bookId);
     const refresh = () => { clear(root); void adminBookView(root, bookId); };
-    root.append(h('div', { class: 'small' }, link('← أداة المحتوى', '#/admin', 'lnk')), h('h1', null, book.title));
+    root.append(h('div', { class: 'small' }, link('← أداة المحتوى', '#/s-40', 'lnk')), h('h1', null, book.title));
     // ---- البيانات ----
     const ed = h('input', { value: book.edition });
     const yr = h('input', { value: book.schoolYear });
@@ -285,7 +285,7 @@ export async function adminBookView(root, bookId) {
         await db.deleteWhere('chapters', c => c.bookId === bookId);
         await db.deleteWhere('questions', q => q.bookId === bookId && q.origin === 'book_generated');
         await db.delete('books', bookId);
-        location.hash = '#/admin';
+        location.hash = '#/s-40';
     }, 'danger'))));
     // ---- الفصول ----
     const chText = h('textarea', { rows: 8, dir: 'auto', placeholder: '# الفصل الأول: الكهربائية الساكنة\n- الشحنة الكهربائية | 8-12\n- قانون كولوم | 13-17' }, chaptersToText(chapters));
@@ -334,7 +334,7 @@ export async function adminBookView(root, bookId) {
     }), btn('إيقاف', () => { cancelFlag = true; }, 'ghost')), genLog));
     // ---- قائمة مراجعة الأسئلة ----
     const toReview = qs.filter(q => q.reviewStatus === 'needs_review');
-    root.append(card(h('h2', null, `مراجعة الأسئلة المولّدة (${toReview.length})`), toReview.length ? link('افتح قائمة المراجعة', `#/admin/questions/${encodeURIComponent(bookId)}`) : h('p', { class: 'muted small' }, 'لا توجد أسئلة بانتظار المراجعة.')));
+    root.append(card(h('h2', null, `مراجعة الأسئلة المولّدة (${toReview.length})`), toReview.length ? link('افتح قائمة المراجعة', `#/s-40/questions/${encodeURIComponent(bookId)}`) : h('p', { class: 'muted small' }, 'لا توجد أسئلة بانتظار المراجعة.')));
     // ---- أسئلة الكتاب (نهاية الدروس/الفصول) ----
     const exList = qs.filter(q => q.origin === 'book_exercise');
     const exCh = h('select', null, ...chapters.map(c => h('option', { value: c.id }, c.title)));
@@ -367,7 +367,7 @@ export async function adminBookView(root, bookId) {
     const renderTable = () => {
         clear(table);
         const rows = pages.filter(p => filter.value === 'all' || (filter.value === 'bad' && p.status !== 'ok') || (filter.value === 'nosum' && !sums.has(p.printedPage)) || (filter.value === 'unrev' && !p.reviewed));
-        table.append(h('table', null, h('thead', null, h('tr', null, ...['PDF', 'مطبوعة', 'الطريقة', 'الحالة', 'ملخص', ''].map(x => h('th', null, x)))), h('tbody', null, ...rows.slice(0, 400).map(p => h('tr', null, h('td', null, String(p.pdfIndex)), h('td', null, String(p.printedPage)), h('td', null, p.method === 'ocr' ? `OCR ${Math.round(p.ocrConfidence ?? 0)}%` : p.method === 'manual' ? 'يدوي' : p.method === 'ai_vision' ? 'قراءة آلية للصورة' : 'نص'), h('td', null, badge(p.status, p.status === 'ok' ? 'ok' : 'warn'), p.reviewed ? badge('مراجَعة', 'ok') : null), h('td', null, sums.has(p.printedPage) ? badge(REVIEW_LABEL[sums.get(p.printedPage).reviewStatus], 'muted') : '—'), h('td', null, link('تحرير', `#/admin/page/${encodeURIComponent(bookId)}/${p.pdfIndex}`, 'lnk')))))));
+        table.append(h('table', null, h('thead', null, h('tr', null, ...['PDF', 'مطبوعة', 'الطريقة', 'الحالة', 'ملخص', ''].map(x => h('th', null, x)))), h('tbody', null, ...rows.slice(0, 400).map(p => h('tr', null, h('td', null, String(p.pdfIndex)), h('td', null, String(p.printedPage)), h('td', null, p.method === 'ocr' ? `OCR ${Math.round(p.ocrConfidence ?? 0)}%` : p.method === 'manual' ? 'يدوي' : p.method === 'ai_vision' ? 'قراءة آلية للصورة' : 'نص'), h('td', null, badge(p.status, p.status === 'ok' ? 'ok' : 'warn'), p.reviewed ? badge('مراجَعة', 'ok') : null), h('td', null, sums.has(p.printedPage) ? badge(REVIEW_LABEL[sums.get(p.printedPage).reviewStatus], 'muted') : '—'), h('td', null, link('تحرير', `#/s-40/page/${encodeURIComponent(bookId)}/${p.pdfIndex}`, 'lnk')))))));
     };
     filter.onchange = renderTable;
     renderTable();
@@ -401,7 +401,7 @@ export async function adminPageView(root, bookId, pdfIndex) {
     }
     const summary = await db.get('summaries', `${bookId}:${page.printedPage}`);
     const refresh = () => { clear(root); void adminPageView(root, bookId, pdfIndex); };
-    root.append(h('div', { class: 'small' }, link(`← ${book.title}`, `#/admin/book/${encodeURIComponent(bookId)}`, 'lnk')), h('h1', null, `صفحة ${page.printedPage} (PDF ${pdfIndex})`));
+    root.append(h('div', { class: 'small' }, link(`← ${book.title}`, `#/s-40/book/${encodeURIComponent(bookId)}`, 'lnk')), h('h1', null, `صفحة ${page.printedPage} (PDF ${pdfIndex})`));
     const preview = h('div', { class: 'page-preview' });
     const txt = h('textarea', { rows: 16, dir: 'auto', class: 'mono-ar' }, page.text);
     root.append(card(h('h2', null, 'النص المستخرج'), h('p', { class: 'small muted' }, `الطريقة: ${page.method} · الحالة: ${page.status}${page.ocrConfidence ? ` · ثقة OCR ${Math.round(page.ocrConfidence)}%` : ''}. صحّح النص بمقارنته بصورة الصفحة. لا تخمّن الكلمات أو المعادلات غير الواضحة — اكتب [غير واضح].`), h('div', { class: 'row wrap' }, btn('عرض صورة الصفحة', async () => {
@@ -493,7 +493,7 @@ export async function adminPageView(root, bookId, pdfIndex) {
 // ================= مراجعة الأسئلة =================
 export async function adminQuestionsView(root, bookId) {
     const qs = (await db.all('questions')).filter(q => q.bookId === bookId && q.reviewStatus === 'needs_review');
-    root.append(h('div', { class: 'small' }, link('← الكتاب', `#/admin/book/${encodeURIComponent(bookId)}`, 'lnk')), h('h1', null, `مراجعة الأسئلة (${qs.length})`));
+    root.append(h('div', { class: 'small' }, link('← الكتاب', `#/s-40/book/${encodeURIComponent(bookId)}`, 'lnk')), h('h1', null, `مراجعة الأسئلة (${qs.length})`));
     if (!qs.length) {
         root.append(emptyState('لا توجد أسئلة بانتظار المراجعة', ''));
         return;
@@ -509,7 +509,7 @@ export async function adminQuestionsView(root, bookId) {
 export async function adminExamView(root, id) {
     const existing = id !== 'new' ? await db.get('questions', id) : undefined;
     const books = await db.all('books');
-    root.append(h('div', { class: 'small' }, link('← أداة المحتوى', '#/admin', 'lnk')), h('h1', null, existing ? 'التحقق من سؤال وزاري' : 'إضافة سؤال وزاري'));
+    root.append(h('div', { class: 'small' }, link('← أداة المحتوى', '#/s-40', 'lnk')), h('h1', null, existing ? 'التحقق من سؤال وزاري' : 'إضافة سؤال وزاري'));
     const subj = h('select', null, ...SUBJECTS.map(s => h('option', { value: s.id }, s.name)));
     subj.value = existing?.subjectId ?? 'physics';
     const type = h('select', null, ...Object.entries({ mcq: 'اختيار من متعدد', true_false: 'صح أو خطأ', fill_blank: 'أكمل الفراغ', definition: 'تعريف', reason: 'تعليل', compare: 'مقارنة', short: 'قصير', calc: 'مسألة حسابية', explain: 'تفسيري' }).map(([k, v]) => h('option', { value: k }, v)));
@@ -589,10 +589,10 @@ export async function adminExamView(root, id) {
             q.similarGroup = all.find(x => x.id === match[0])?.similarGroup ?? match[0];
         await db.put('questions', q);
         toast(isVerified ? 'تم الحفظ كسؤال وزاري موثق' : 'تم الحفظ — بانتظار التحقق');
-        location.hash = '#/admin';
+        location.hash = '#/s-40';
     }, 'primary'), existing ? btn('حذف', async () => { if (await confirmDialog('حذف السؤال؟')) {
         await db.delete('questions', existing.id);
-        location.hash = '#/admin';
+        location.hash = '#/s-40';
     } }, 'danger') : null)));
     void ORIGIN_LABEL;
 }

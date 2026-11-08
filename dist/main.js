@@ -35,11 +35,11 @@ const routes = [
     [/^\/settings$/, r => settingsView(r), 'الإعدادات'],
     [/^\/privacy$/, r => privacyView(r), 'الخصوصية'],
     [/^\/sources$/, r => sourcesView(r), 'سجل المصادر'],
-    [/^\/admin$/, (r, _m, q) => adminView(r, q), 'أداة المحتوى'],
-    [/^\/admin\/book\/([^/]+)$/, (r, m) => adminBookView(r, decodeURIComponent(m[1])), 'إدارة كتاب'],
-    [/^\/admin\/page\/([^/]+)\/(\d+)$/, (r, m) => adminPageView(r, decodeURIComponent(m[1]), +m[2]), 'تحرير صفحة'],
-    [/^\/admin\/questions\/([^/]+)$/, (r, m) => adminQuestionsView(r, decodeURIComponent(m[1])), 'مراجعة الأسئلة'],
-    [/^\/admin\/exam\/([^/]+)$/, (r, m) => adminExamView(r, m[1]), 'سؤال وزاري'],
+    [/^\/s-40$/, (r, _m, q) => adminView(r, q), 'لوحة الإدارة'],
+    [/^\/s-40\/book\/([^/]+)$/, (r, m) => adminBookView(r, decodeURIComponent(m[1])), 'إدارة كتاب'],
+    [/^\/s-40\/page\/([^/]+)\/(\d+)$/, (r, m) => adminPageView(r, decodeURIComponent(m[1]), +m[2]), 'تحرير صفحة'],
+    [/^\/s-40\/questions\/([^/]+)$/, (r, m) => adminQuestionsView(r, decodeURIComponent(m[1])), 'مراجعة الأسئلة'],
+    [/^\/s-40\/exam\/([^/]+)$/, (r, m) => adminExamView(r, m[1]), 'سؤال وزاري'],
 ];
 let renderSeq = 0;
 async function render() {
@@ -77,7 +77,7 @@ async function render() {
     }
     view.append(emptyState('الصفحة غير موجودة', '', link('الرئيسية', '#/')));
 }
-function pathIsAdmin() { return (location.hash || '').slice(1).split('?')[0].startsWith('/admin'); }
+function pathIsAdmin() { return (location.hash || '').slice(1).split('?')[0].startsWith('/s-40'); }
 async function boot() {
     document.body.append(buildShell());
     try {

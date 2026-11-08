@@ -8,7 +8,7 @@ const NAV = [
     { href: '#/exams', label: 'الوزاريات', icon: 'archive', match: /^#\/exams/ },
     { href: '#/review', label: 'المراجعة', icon: 'repeat', match: /^#\/review/ },
     { href: '#/progress', label: 'تقدّمي', icon: 'chart', match: /^#\/(progress|results|quiz)/ },
-    { href: '#/settings', label: 'الإعدادات', icon: 'gear', match: /^#\/(settings|privacy|sources|admin)/ },
+    { href: '#/settings', label: 'الإعدادات', icon: 'gear', match: /^#\/(settings|privacy|sources|s-40)/ },
 ];
 export function buildShell() {
     const main = h('main', { id: 'view', tabindex: -1 });
