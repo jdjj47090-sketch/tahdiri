@@ -165,6 +165,9 @@ export async function settingsView(root) {
         location.hash = '#/';
     }, 'danger')));
     root.append(h('p', { class: 'small' }, link('سياسة الخصوصية', '#/privacy', 'lnk'), ' · ', link('سجل المصادر', '#/sources', 'lnk')));
+    root.querySelectorAll('a[href^="#/admin"], a, button').forEach(el => {
+        if (el.getAttribute('href')?.startsWith('#/admin') || /أداة المحتوى\s*\(للمشرف\)/.test(el.textContent)) el.remove();
+    });
 }
 // ================= الخصوصية =================
 export function privacyView(root) {
