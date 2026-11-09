@@ -29,3 +29,5 @@ env -u LD_LIBRARY_PATH -u LD_PRELOAD python render_ad.py
 ```sh
 env -u LD_LIBRARY_PATH -u LD_PRELOAD ffprobe -v error -show_entries format=duration:stream=codec_name,codec_type,width,height,r_frame_rate,sample_rate,channels -of json tahdiri-ad-02.mp4
 ```
+
+صفحة المعاينة `index.html` تشغّل ملف MP4 النهائي وتوفّر رابط تحميل مباشر ونص التوقيت.
